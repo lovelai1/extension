@@ -79,6 +79,29 @@ public interface CoreConfig {
         @ExcludePlatform(platforms = {"Extension"})
         SessionInfo sessionInfo();
 
+        @Comment("Extension-only overrides for session information")
+        @ExcludePlatform(platforms = {"Standalone"})
+        ExtensionOverrides overrides();
+
+        @ConfigSerializable
+        interface ExtensionOverrides {
+            @Comment("Override the host name to broadcast (leave blank to use the Geyser MOTD)")
+            @DefaultString("")
+            String hostName();
+
+            @Comment("Override the world name to broadcast (leave blank to use the Geyser MOTD)")
+            @DefaultString("")
+            String worldName();
+
+            @Comment("Override the current number of players (-1 to use the live count)")
+            @DefaultNumeric(-1)
+            int players();
+
+            @Comment("Override the maximum number of players (-1 to use the live count)")
+            @DefaultNumeric(-1)
+            int maxPlayers();
+        }
+
         @ConfigSerializable
         interface SessionInfo {
             @Comment("The host name to broadcast")

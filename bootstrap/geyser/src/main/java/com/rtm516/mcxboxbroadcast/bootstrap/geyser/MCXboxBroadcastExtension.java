@@ -189,10 +189,12 @@ public class MCXboxBroadcastExtension implements Extension {
 
             // Create the session information based on the Geyser config
             sessionInfo = new SessionInfo();
-            sessionInfo.setHostName(this.geyserApi().bedrockListener().secondaryMotd());
-            sessionInfo.setWorldName(this.geyserApi().bedrockListener().primaryMotd());
-            sessionInfo.setPlayers(this.geyserApi().onlineConnections().size());
-            sessionInfo.setMaxPlayers(GeyserImpl.getInstance().config().motd().maxPlayers()); // TODO Find API equivalent
+            applySessionOverrides(
+                this.geyserApi().bedrockListener().secondaryMotd(),
+                this.geyserApi().bedrockListener().primaryMotd(),
+                this.geyserApi().onlineConnections().size(),
+                GeyserImpl.getInstance().config().motd().maxPlayers()
+            ); // TODO Find API equivalent
 
             // Fallback to the gamertag if the host name is empty
             if (sessionInfo.getHostName().isEmpty()) {
@@ -224,11 +226,12 @@ public class MCXboxBroadcastExtension implements Extension {
         }
 
         // Allows support for motd and player count passthrough
-        sessionInfo.setHostName(hostName);
-        sessionInfo.setWorldName(event.primaryMotd());
-        
-        sessionInfo.setPlayers(event.playerCount());
-        sessionInfo.setMaxPlayers(event.maxPlayerCount());
+        applySessionOverrides(
+            hostName,
+            event.primaryMotd(),
+            event.playerCount(),
+            event.maxPlayerCount()
+        );
 
         // Fallback to the gamertag if the host name is empty
         if (sessionInfo.getHostName().isEmpty()) {
@@ -257,5 +260,34 @@ public class MCXboxBroadcastExtension implements Extension {
         } catch (SessionUpdateException e) {
             sessionManager.logger().error("Failed to update session information!", e);
         }
+    }
+
+    private void applySessionOverrides(String hostName, String worldName, int players, int maxPlayers) {
+        var overrides = config.session().overrides();
+
+        String overrideHostName = overrides.hostName();
+        if (overrideHostName != null && !overrideHostName.isBlank()) {
+            hostName = overrideHostName;
+        }
+
+        String overrideWorldName = overrides.worldName();
+        if (overrideWorldName != null && !overrideWorldName.isBlank()) {
+            worldName = overrideWorldName;
+        }
+
+        int overridePlayers = overrides.players();
+        if (overridePlayers >= 0) {
+            players = overridePlayers;
+        }
+
+        int overrideMaxPlayers = overrides.maxPlayers();
+        if (overrideMaxPlayers >= 0) {
+            maxPlayers = overrideMaxPlayers;
+        }
+
+        sessionInfo.setHostName(hostName);
+        sessionInfo.setWorldName(worldName);
+        sessionInfo.setPlayers(players);
+        sessionInfo.setMaxPlayers(maxPlayers);
     }
 }
