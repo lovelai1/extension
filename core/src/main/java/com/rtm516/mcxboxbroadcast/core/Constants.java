@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder;
 import org.cloudburstmc.protocol.bedrock.codec.BedrockCodec;
 import org.cloudburstmc.protocol.bedrock.codec.v898.Bedrock_v898;
 
+import java.lang.reflect.Field;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
@@ -56,7 +57,28 @@ public class Constants {
     /**
      * Used for the micro nethernet server that transfers the client to the real server
      */
-    public static final BedrockCodec BEDROCK_CODEC = Bedrock_v898.CODEC;
+    public static final BedrockCodec BEDROCK_CODEC = findLatestBedrockCodec();
+
+
+    private static BedrockCodec findLatestBedrockCodec() {
+        // Prefer the newest codec present in the current protocol library so version bumps
+        // do not require an immediate code change in this project.
+        for (int version = 999; version >= 700; version--) {
+            String className = "org.cloudburstmc.protocol.bedrock.codec.v" + version + ".Bedrock_v" + version;
+            try {
+                Class<?> codecClass = Class.forName(className);
+                Field codecField = codecClass.getField("CODEC");
+                Object codec = codecField.get(null);
+                if (codec instanceof BedrockCodec bedrockCodec) {
+                    return bedrockCodec;
+                }
+            } catch (ReflectiveOperationException ignored) {
+                // Ignore missing/incompatible codec classes and continue scanning.
+            }
+        }
+
+        return Bedrock_v898.CODEC;
+    }
 
     /**
      * Config version for upgrade purposes
